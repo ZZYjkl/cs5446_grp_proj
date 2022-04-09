@@ -25,3 +25,18 @@ def get_snake_pos(snake):
 
 def get_snake_body(snake):
     return snake.body
+
+
+def get_action(current, target):
+    if target[0] > current[0]:
+        return 1
+    if target[0] < current[0]:
+        return 3
+    if target[1] < current[1]:
+        return 0
+    if target[1] > current[1]:
+        return 2
+
+
+def dead_checking(grid, coord):
+    return grid.off_grid(coord) or grid.snake_space(coord)
