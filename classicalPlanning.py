@@ -1,9 +1,9 @@
 import gym
 import gym_snake
-import numpy as np
 from snakeUtils import *
 from operator import add, sub
 from typing import Tuple
+import random
 
 ACTIONS = {0: 'UP', 1: 'RIGHT', 2: 'DOWN', 3: 'LEFT'}
 
@@ -22,31 +22,52 @@ def heuristic(start, goal):
     return (start[0] - goal[0])**2 + (start[1] - goal[1])**2
 
 
-def astar_path(food, snake, grid):
+def get_neighbors(node):
+    for diff in ((0, 1), (0, -1), (1, 0), (-1, 0)):
+        yield node_add(node, diff)
+
+
+def bfs_path(food, start, grid):
+    queue = [[start]]
+
+    while queue:
+        path = queue[0]
+        future_head = path[-1]
+
+        if future_head == tuple(food):
+            return path
+
+        for next_node in get_neighbors(future_head):
+            if dead_checking(grid, next_node) or any(next_node in sublist for sublist in queue):
+                continue
+            new_path = list(path)
+            new_path.append(next_node)
+            queue.append(new_path)
+
+        queue.pop(0)
+
+
+def astar_path(food, start, grid):
     came_from = {}
     close_list = set()
     goal = tuple(food)
-    start = tuple(get_snake_pos(snake))
     neighbors = [(1, 0), (-1, 0), (0, 1), (0, -1)]
     gscore = {start: 0}
     fscore = {start: heuristic(start, goal)}
     open_list = [(fscore[start], start)]
-    #print(start, goal, open_list)
     while open_list:
-        print(open_list)
-        print("that was open_list")
         current = min(open_list, key=lambda x: x[0])[1]
-        print(current)
-        print("that was current")
         open_list.pop(0)
-        #print(current)
         if current == goal:
             data = []
             while current in came_from:
                 data.append(current)
                 current = came_from[current]
-                print(data)
-            return data[-1]
+            if bfs_path(food, data[-1], grid):
+                # return this value only if bfs doesnt indicate any dead end with this path
+                return data[-1]
+            else:
+                continue
 
         close_list.add(current)
 
@@ -86,19 +107,31 @@ if __name__ == "__main__":
     obs = grid_pixels
     steps = 1
     total_pts = 0
+    algo_used = ''
 
     while not done:
         current = tuple(get_snake_pos(snake))
-        target = astar_path(get_food_pos(obs), snake, grid_object)
-        print("Step"+str(steps))
-        print(current)
-        print(target)
-        print("rewards"+str(total_pts))
-        action = get_action(current, target)
-        print(ACTIONS[action])
+        target = astar_path(get_food_pos(obs), current, grid_object)
+        algo_used = 'a-star'
+        if not target:
+            bfs_res = bfs_path(get_food_pos(obs), current, grid_object)
+            if bfs_res:
+                target = bfs_res[1]
+                algo_used = 'bfs'
+        print("Step #" + str(steps))
+        print("Food: " + str(get_food_pos(obs)))
+        print("Current position: " + str(current))
+        if target:
+            action = get_action(current, target)
+        else:
+            # just in case both algos return null
+            action = random.choice(range(0, 3))
+            algo_used = 'random'
+        print("Recommended action: " + str(ACTIONS[action]))
+        print("Algo used: " + str(algo_used))
         obs, rewards, done, info = env.step(action)
-        print("----------")
-        print("nextfood"+str(get_food_pos(obs)))
         total_pts = total_pts + rewards
+        print("Points: " + str(total_pts))
+        print("----------")
         steps = steps + 1
         env.render()
