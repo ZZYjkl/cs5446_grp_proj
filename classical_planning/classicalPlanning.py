@@ -108,6 +108,7 @@ if __name__ == "__main__":
     steps = 1
     total_pts = 0
     algo_used = ''
+    pts_list = []
 
     while not done:
         current = tuple(get_snake_pos(snake))
@@ -131,7 +132,10 @@ if __name__ == "__main__":
         print("Algo used: " + str(algo_used))
         obs, rewards, done, info = env.step(action)
         total_pts = total_pts + rewards
+        pts_list.append(total_pts)
         print("Points: " + str(total_pts))
         print("----------")
         steps = steps + 1
         env.render()
+
+    print(pts_list)
